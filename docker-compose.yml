@@ -1,0 +1,85 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: api-moitoring-postgres
+    environment:
+      POSTGRES_DB: api_monitoring_db
+      POSTGRES_USER: api_monitoring
+      POSTGRES_PASSWORD: api_monitoring_password
+      POSTGRES_INITBD_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    networks:
+      - api_monitoring-networks
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d api_monitoring"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # start_period: 30s
+  mongo:
+    image: mongo:6.0
+    container_name: api-moitoring-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - api_monitoring-networks
+    restart: unless-stopped
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: api-moitoring-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: api_monitoring
+      RABBITMQ_DEFAULT_PASS: api_monitoring_password
+      RABBITMQ_DEFAULT_VHOST: api_monitoring
+    ports:
+      - "5672:5672"  # AMQP port
+      - "15672:15672" # Management UI port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq 
+    networks:
+      - api_monitoring-networks
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      # start_period: 30s
+  pgadmin:
+    image: dpage/pgadmin4:7
+    container_name: api-moitoring-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin # pgadmin ka data persist karne ke liye volume use kiya hai taki agar container band ho jaye to bhi pgadmin ka data safe rahe
+    networks:
+      - api_monitoring-networks
+    restart: unless-stopped
+    depends_on: # ye depend_on isliye use kiya hai taki pgadmin container tabhi start ho jab postgres container successfully start ho jaye taki pgadmin ko postgres se connect karne me koi problem na aaye
+      - postgres
+
+# mai ager nhi chahta hu ki containers band ho jaye to data lost na ho isliye maine volumes ka use kiya hai jisse data persist rahega chahe container band ho jaye ya delete ho jaye
+volumes:
+  postgres_data:
+    driver: local # by default local driver hi use hota hai to isko specify karna zaruri nahi hai iska matlab hai ki ye volume local machine par create hoga aur data ko persist karega
+  mongo_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  api_monitoring-networks:
+    driver: bridge # aapas me communicate karne ke liye bridge driver use kiya hai jo ki docker ke andar ek isolated network create karega jisme sirf ye containers communicate kar sakte hai aur ye network host machine se alag hoga
+    # bridge driver by default use hota hai to isko specify karna zaruri nahi hai iska matlab hai ki ye network docker ke andar ek isolated network create karega jisme sirf ye containers communicate kar sakte hai aur ye network host machine se alag hoga
