@@ -31,6 +31,8 @@ class MongoConnection {
                 // useUnifiedTopology: true,
                 dbName: config.mongo.dbName,
             });
+            this.connection = mongoose.connection;
+            
             logger.info(`MongoDB Connected Successfully: ${config.mongo.url}`);
             
             this.connection.on('error', (err) => {
@@ -48,7 +50,9 @@ class MongoConnection {
             throw error;
         }
     }
-    
+  /**
+   * help to disconnect from MongoDB
+   */
   async disconnect() {
     try {
       if (this.connection) {
@@ -61,4 +65,16 @@ class MongoConnection {
       throw error;
     }
   }
+  /**
+   * Get the current MongoDB connection instance
+   * @returns {mongoose.connection} current MongoDB connection instance
+   */
+  getConnection() {
+    if (!this.connection) {
+      logger.error("MongoDB is not connected. Please call connect() first.");
+    }
+    return this.connection;
   }
+}
+
+export default new MongoConnection();
