@@ -1,21 +1,39 @@
 {
   "name": "api-monitoring-system",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Real-Time API Hit Tracking & Monitoring System",
+  "main": "src/server.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "processor": "node src/modules/processor/consumer.js",
+    "init": "node init-system.js",
+    "init:env": "node init-system.js --generate-env"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/RaNaJitu/API-Monitoring-System.git"
+  "keywords": [
+    "api",
+    "monitoring",
+    "tracking",
+    "analytics"
+  ],
+  "author": "JITENDRA",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.0.0",
+    "pg": "^8.11.3",
+    "amqplib": "^0.10.3",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^9.0.1",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "winston": "^3.11.0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/RaNaJitu/API-Monitoring-System/issues"
-  },
-  "homepage": "https://github.com/RaNaJitu/API-Monitoring-System#readme"
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
 }

@@ -3,17 +3,17 @@ services:
     image: postgres:15-alpine
     container_name: api-moitoring-postgres
     environment:
-      POSTGRES_DB: api_monitoring_db
-      POSTGRES_USER: api_monitoring
-      POSTGRES_PASSWORD: api_monitoring_password
+      POSTGRES_DB: api_monitoring
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: jeetu123
       POSTGRES_INITBD_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
     networks:
-      - api_monitoring-networks
+      - api-monitoring-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d api_monitoring"]
@@ -29,7 +29,7 @@ services:
     volumes:
       - mongo_data:/data/db
     networks:
-      - api_monitoring-networks
+      - api-monitoring-network
     restart: unless-stopped
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -44,7 +44,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq 
     networks:
-      - api_monitoring-networks
+      - api-monitoring-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
@@ -63,10 +63,54 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin # pgadmin ka data persist karne ke liye volume use kiya hai taki agar container band ho jaye to bhi pgadmin ka data safe rahe
     networks:
-      - api_monitoring-networks
+      - api-monitoring-network
     restart: unless-stopped
     depends_on: # ye depend_on isliye use kiya hai taki pgadmin container tabhi start ho jab postgres container successfully start ho jaye taki pgadmin ko postgres se connect karne me koi problem na aaye
       - postgres
+
+  api-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-monitoring-app
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      # MongoDB (local container)
+      MONGO_URI: mongodb://mongo:27017/api_monitoring
+      MONGO_DB_NAME: api_monitoring
+      # PostgreSQL (Docker container)
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DATABASE: api_monitoring
+      PG_USER: postgres
+      PG_PASSWORD: jeetu123
+      # RabbitMQ (Docker container)
+      RABBITMQ_URL: amqp://api_monitoring:api_monitoring_password@rabbitmq:5672/api_monitoring
+      RABBITMQ_QUEUE: api_hits
+      # Security
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 24h
+      # Rate Limiting
+      RATE_LIMIT_WINDOW_MS: 60000
+      RATE_LIMIT_MAX_REQUESTS: 100
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - api-monitoring-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 # mai ager nhi chahta hu ki containers band ho jaye to data lost na ho isliye maine volumes ka use kiya hai jisse data persist rahega chahe container band ho jaye ya delete ho jaye
 volumes:
@@ -80,6 +124,6 @@ volumes:
     driver: local
 
 networks:
-  api_monitoring-networks:
+  api-monitoring-network:
     driver: bridge # aapas me communicate karne ke liye bridge driver use kiya hai jo ki docker ke andar ek isolated network create karega jisme sirf ye containers communicate kar sakte hai aur ye network host machine se alag hoga
     # bridge driver by default use hota hai to isko specify karna zaruri nahi hai iska matlab hai ki ye network docker ke andar ek isolated network create karega jisme sirf ye containers communicate kar sakte hai aur ye network host machine se alag hoga

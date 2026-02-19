@@ -1,3 +1,4 @@
+
 import pg from "pg";
 import logger from "./logger.js";
 import config from "./index.js";
@@ -39,10 +40,10 @@ class PostgresConnection {
      * Test the PostgreSQL connection by executing a simple query
      * @returns {Promise<void>}
      */
-    async testconnection() {
+    async testConnection() {
         try {
             const pool = this.getPool();
-            const client = pool.connect();
+            const client = await pool.connect();
             const result = await client.query("SELECT NOW()");
             client.release();
 

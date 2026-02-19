@@ -1,4 +1,6 @@
 import winston from 'winston';
+import config  from './index.js';
+
 /**
  * Logger configuration using Winston
  * Logs are stored in 'logs' directory with separate files for errors and combined logs
@@ -6,8 +8,8 @@ import winston from 'winston';
  */
 const logger = winston.createLogger({
   level: config.node_env === 'production' ? 'info' : 'debug',
-  format: winston.format.combine(
-    winston.format.timestamp(format = 'YYYY-MM-DD HH:mm:ss'),
+   format: winston.format.combine(
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.errors({ stack: true }),
     winston.format.splat(),
     winston.format.json(),
