@@ -63,7 +63,7 @@ app.get('/health', (req, res) => {
  * Root endpoint
  * Provides basic information about the API service and available endpoints.
  */
-app.use("/", (req, res) => {
+app.get("/", (req, res) => {
     res.status(200).json(
         ResponseFormatter.success(
             {

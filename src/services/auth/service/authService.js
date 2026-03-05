@@ -73,6 +73,7 @@ export class AuthService {
             }
 
             const user = await this.userRepository.create(superAdminData);
+            logger.info("User Details", user)
             const token = this.generateToken(user);
 
             logger.info("Admin onboarded successfully", {
